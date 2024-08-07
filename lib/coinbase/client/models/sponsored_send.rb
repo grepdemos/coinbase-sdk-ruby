@@ -14,23 +14,43 @@ require 'date'
 require 'time'
 
 module Coinbase::Client
-  class FetchStakingRewardsRequest
+  # An onchain sponsored gasless USDC Send.
+  class SponsoredSend
     # The ID of the blockchain network
     attr_accessor :network_id
 
-    # The ID of the asset for which the staking rewards are being fetched
-    attr_accessor :asset_id
+    # The onchain address of the sender
+    attr_accessor :from_address_id
 
-    # The onchain addresses for which the staking rewards are being fetched
-    attr_accessor :address_ids
+    # The onchain address of the recipient
+    attr_accessor :to_address_id
 
-    # The start time of this reward period
-    attr_accessor :start_time
+    # The onchain contract address of the asset
+    attr_accessor :asset_contract_address
 
-    # The end time of this reward period
-    attr_accessor :end_time
+    # The onchain escrow contract address
+    attr_accessor :escrow_contract_address
 
-    attr_accessor :format
+    # The amount of USDC the sender is sending to the recipient
+    attr_accessor :amount
+
+    # The raw typed data for the sponsored send
+    attr_accessor :raw_typed_data
+
+    # The typed data hash for the sponsored send. This is the typed data hash that needs to be signed by the sender.
+    attr_accessor :typed_data_hash
+
+    # The signed hash of the sponsored send typed data.
+    attr_accessor :signature
+
+    # The hash of the onchain sponsored send transaction
+    attr_accessor :transaction_hash
+
+    # The link to view the transaction on a block explorer. This is optional and may not be present for all transactions.
+    attr_accessor :transaction_link
+
+    # The status of the sponsored send
+    attr_accessor :status
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -58,11 +78,17 @@ module Coinbase::Client
     def self.attribute_map
       {
         :'network_id' => :'network_id',
-        :'asset_id' => :'asset_id',
-        :'address_ids' => :'address_ids',
-        :'start_time' => :'start_time',
-        :'end_time' => :'end_time',
-        :'format' => :'format'
+        :'from_address_id' => :'from_address_id',
+        :'to_address_id' => :'to_address_id',
+        :'asset_contract_address' => :'asset_contract_address',
+        :'escrow_contract_address' => :'escrow_contract_address',
+        :'amount' => :'amount',
+        :'raw_typed_data' => :'raw_typed_data',
+        :'typed_data_hash' => :'typed_data_hash',
+        :'signature' => :'signature',
+        :'transaction_hash' => :'transaction_hash',
+        :'transaction_link' => :'transaction_link',
+        :'status' => :'status'
       }
     end
 
@@ -75,11 +101,17 @@ module Coinbase::Client
     def self.openapi_types
       {
         :'network_id' => :'String',
-        :'asset_id' => :'String',
-        :'address_ids' => :'Array<String>',
-        :'start_time' => :'Time',
-        :'end_time' => :'Time',
-        :'format' => :'StakingRewardFormat'
+        :'from_address_id' => :'String',
+        :'to_address_id' => :'String',
+        :'asset_contract_address' => :'String',
+        :'escrow_contract_address' => :'String',
+        :'amount' => :'String',
+        :'raw_typed_data' => :'String',
+        :'typed_data_hash' => :'String',
+        :'signature' => :'String',
+        :'transaction_hash' => :'String',
+        :'transaction_link' => :'String',
+        :'status' => :'String'
       }
     end
 
@@ -93,13 +125,13 @@ module Coinbase::Client
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `Coinbase::Client::FetchStakingRewardsRequest` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `Coinbase::Client::SponsoredSend` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!self.class.attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `Coinbase::Client::FetchStakingRewardsRequest`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `Coinbase::Client::SponsoredSend`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
@@ -110,36 +142,60 @@ module Coinbase::Client
         self.network_id = nil
       end
 
-      if attributes.key?(:'asset_id')
-        self.asset_id = attributes[:'asset_id']
+      if attributes.key?(:'from_address_id')
+        self.from_address_id = attributes[:'from_address_id']
       else
-        self.asset_id = nil
+        self.from_address_id = nil
       end
 
-      if attributes.key?(:'address_ids')
-        if (value = attributes[:'address_ids']).is_a?(Array)
-          self.address_ids = value
-        end
+      if attributes.key?(:'to_address_id')
+        self.to_address_id = attributes[:'to_address_id']
       else
-        self.address_ids = nil
+        self.to_address_id = nil
       end
 
-      if attributes.key?(:'start_time')
-        self.start_time = attributes[:'start_time']
-      else
-        self.start_time = nil
+      if attributes.key?(:'asset_contract_address')
+        self.asset_contract_address = attributes[:'asset_contract_address']
       end
 
-      if attributes.key?(:'end_time')
-        self.end_time = attributes[:'end_time']
-      else
-        self.end_time = nil
+      if attributes.key?(:'escrow_contract_address')
+        self.escrow_contract_address = attributes[:'escrow_contract_address']
       end
 
-      if attributes.key?(:'format')
-        self.format = attributes[:'format']
+      if attributes.key?(:'amount')
+        self.amount = attributes[:'amount']
       else
-        self.format = 'usd'
+        self.amount = nil
+      end
+
+      if attributes.key?(:'raw_typed_data')
+        self.raw_typed_data = attributes[:'raw_typed_data']
+      else
+        self.raw_typed_data = nil
+      end
+
+      if attributes.key?(:'typed_data_hash')
+        self.typed_data_hash = attributes[:'typed_data_hash']
+      else
+        self.typed_data_hash = nil
+      end
+
+      if attributes.key?(:'signature')
+        self.signature = attributes[:'signature']
+      end
+
+      if attributes.key?(:'transaction_hash')
+        self.transaction_hash = attributes[:'transaction_hash']
+      end
+
+      if attributes.key?(:'transaction_link')
+        self.transaction_link = attributes[:'transaction_link']
+      end
+
+      if attributes.key?(:'status')
+        self.status = attributes[:'status']
+      else
+        self.status = nil
       end
     end
 
@@ -152,24 +208,28 @@ module Coinbase::Client
         invalid_properties.push('invalid value for "network_id", network_id cannot be nil.')
       end
 
-      if @asset_id.nil?
-        invalid_properties.push('invalid value for "asset_id", asset_id cannot be nil.')
+      if @from_address_id.nil?
+        invalid_properties.push('invalid value for "from_address_id", from_address_id cannot be nil.')
       end
 
-      if @address_ids.nil?
-        invalid_properties.push('invalid value for "address_ids", address_ids cannot be nil.')
+      if @to_address_id.nil?
+        invalid_properties.push('invalid value for "to_address_id", to_address_id cannot be nil.')
       end
 
-      if @start_time.nil?
-        invalid_properties.push('invalid value for "start_time", start_time cannot be nil.')
+      if @amount.nil?
+        invalid_properties.push('invalid value for "amount", amount cannot be nil.')
       end
 
-      if @end_time.nil?
-        invalid_properties.push('invalid value for "end_time", end_time cannot be nil.')
+      if @raw_typed_data.nil?
+        invalid_properties.push('invalid value for "raw_typed_data", raw_typed_data cannot be nil.')
       end
 
-      if @format.nil?
-        invalid_properties.push('invalid value for "format", format cannot be nil.')
+      if @typed_data_hash.nil?
+        invalid_properties.push('invalid value for "typed_data_hash", typed_data_hash cannot be nil.')
+      end
+
+      if @status.nil?
+        invalid_properties.push('invalid value for "status", status cannot be nil.')
       end
 
       invalid_properties
@@ -180,12 +240,25 @@ module Coinbase::Client
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @network_id.nil?
-      return false if @asset_id.nil?
-      return false if @address_ids.nil?
-      return false if @start_time.nil?
-      return false if @end_time.nil?
-      return false if @format.nil?
+      return false if @from_address_id.nil?
+      return false if @to_address_id.nil?
+      return false if @amount.nil?
+      return false if @raw_typed_data.nil?
+      return false if @typed_data_hash.nil?
+      return false if @status.nil?
+      status_validator = EnumAttributeValidator.new('String', ["pending", "signed", "submitted", "complete", "failed"])
+      return false unless status_validator.valid?(@status)
       true
+    end
+
+    # Custom attribute writer method checking allowed values (enum).
+    # @param [Object] status Object to be assigned
+    def status=(status)
+      validator = EnumAttributeValidator.new('String', ["pending", "signed", "submitted", "complete", "failed"])
+      unless validator.valid?(status)
+        fail ArgumentError, "invalid value for \"status\", must be one of #{validator.allowable_values}."
+      end
+      @status = status
     end
 
     # Checks equality by comparing each attribute.
@@ -194,11 +267,17 @@ module Coinbase::Client
       return true if self.equal?(o)
       self.class == o.class &&
           network_id == o.network_id &&
-          asset_id == o.asset_id &&
-          address_ids == o.address_ids &&
-          start_time == o.start_time &&
-          end_time == o.end_time &&
-          format == o.format
+          from_address_id == o.from_address_id &&
+          to_address_id == o.to_address_id &&
+          asset_contract_address == o.asset_contract_address &&
+          escrow_contract_address == o.escrow_contract_address &&
+          amount == o.amount &&
+          raw_typed_data == o.raw_typed_data &&
+          typed_data_hash == o.typed_data_hash &&
+          signature == o.signature &&
+          transaction_hash == o.transaction_hash &&
+          transaction_link == o.transaction_link &&
+          status == o.status
     end
 
     # @see the `==` method
@@ -210,7 +289,7 @@ module Coinbase::Client
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [network_id, asset_id, address_ids, start_time, end_time, format].hash
+      [network_id, from_address_id, to_address_id, asset_contract_address, escrow_contract_address, amount, raw_typed_data, typed_data_hash, signature, transaction_hash, transaction_link, status].hash
     end
 
     # Builds the object from hash

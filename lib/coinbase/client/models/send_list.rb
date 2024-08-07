@@ -14,23 +14,26 @@ require 'date'
 require 'time'
 
 module Coinbase::Client
-  # A list of contract events with pagination information
-  class ContractEventList
-    # An array of ContractEvent objects
+  # 
+  class SendList
     attr_accessor :data
 
-    # The page token to be used to fetch the next page
+    # True if this list has another page of items after this one that can be fetched.
+    attr_accessor :has_more
+
+    # The page token to be used to fetch the next page.
     attr_accessor :next_page
 
-    # True if this list has another page of items after this one that can be fetched
-    attr_accessor :has_more
+    # The total number of sends for the address in the wallet.
+    attr_accessor :total_count
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
         :'data' => :'data',
+        :'has_more' => :'has_more',
         :'next_page' => :'next_page',
-        :'has_more' => :'has_more'
+        :'total_count' => :'total_count'
       }
     end
 
@@ -42,9 +45,10 @@ module Coinbase::Client
     # Attribute type mapping.
     def self.openapi_types
       {
-        :'data' => :'Array<ContractEvent>',
+        :'data' => :'Array<ModelSend>',
+        :'has_more' => :'Boolean',
         :'next_page' => :'String',
-        :'has_more' => :'Boolean'
+        :'total_count' => :'Integer'
       }
     end
 
@@ -58,13 +62,13 @@ module Coinbase::Client
     # @param [Hash] attributes Model attributes in the form of hash
     def initialize(attributes = {})
       if (!attributes.is_a?(Hash))
-        fail ArgumentError, "The input argument (attributes) must be a hash in `Coinbase::Client::ContractEventList` initialize method"
+        fail ArgumentError, "The input argument (attributes) must be a hash in `Coinbase::Client::SendList` initialize method"
       end
 
       # check to see if the attribute exists and convert string to symbol for hash key
       attributes = attributes.each_with_object({}) { |(k, v), h|
         if (!self.class.attribute_map.key?(k.to_sym))
-          fail ArgumentError, "`#{k}` is not a valid attribute in `Coinbase::Client::ContractEventList`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
+          fail ArgumentError, "`#{k}` is not a valid attribute in `Coinbase::Client::SendList`. Please check the name to make sure it's valid. List of attributes: " + self.class.attribute_map.keys.inspect
         end
         h[k.to_sym] = v
       }
@@ -77,16 +81,22 @@ module Coinbase::Client
         self.data = nil
       end
 
+      if attributes.key?(:'has_more')
+        self.has_more = attributes[:'has_more']
+      else
+        self.has_more = nil
+      end
+
       if attributes.key?(:'next_page')
         self.next_page = attributes[:'next_page']
       else
         self.next_page = nil
       end
 
-      if attributes.key?(:'has_more')
-        self.has_more = attributes[:'has_more']
+      if attributes.key?(:'total_count')
+        self.total_count = attributes[:'total_count']
       else
-        self.has_more = nil
+        self.total_count = nil
       end
     end
 
@@ -99,12 +109,16 @@ module Coinbase::Client
         invalid_properties.push('invalid value for "data", data cannot be nil.')
       end
 
+      if @has_more.nil?
+        invalid_properties.push('invalid value for "has_more", has_more cannot be nil.')
+      end
+
       if @next_page.nil?
         invalid_properties.push('invalid value for "next_page", next_page cannot be nil.')
       end
 
-      if @has_more.nil?
-        invalid_properties.push('invalid value for "has_more", has_more cannot be nil.')
+      if @total_count.nil?
+        invalid_properties.push('invalid value for "total_count", total_count cannot be nil.')
       end
 
       invalid_properties
@@ -115,8 +129,9 @@ module Coinbase::Client
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @data.nil?
-      return false if @next_page.nil?
       return false if @has_more.nil?
+      return false if @next_page.nil?
+      return false if @total_count.nil?
       true
     end
 
@@ -126,8 +141,9 @@ module Coinbase::Client
       return true if self.equal?(o)
       self.class == o.class &&
           data == o.data &&
+          has_more == o.has_more &&
           next_page == o.next_page &&
-          has_more == o.has_more
+          total_count == o.total_count
     end
 
     # @see the `==` method
@@ -139,7 +155,7 @@ module Coinbase::Client
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [data, next_page, has_more].hash
+      [data, has_more, next_page, total_count].hash
     end
 
     # Builds the object from hash
