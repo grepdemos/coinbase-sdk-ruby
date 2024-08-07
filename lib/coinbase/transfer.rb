@@ -25,7 +25,7 @@ module Coinbase
       # @param wallet_id [String] The Wallet ID of the sending Wallet
       # @return [Transfer] The new pending Transfer object
       # @raise [Coinbase::ApiError] If the Transfer fails
-      def create(address_id:, amount:, asset_id:, destination:, network_id:, wallet_id:)
+      def create(address_id:, amount:, asset_id:, destination:, network_id:, wallet_id:, gasless: false)
         asset = Asset.fetch(network_id, asset_id)
 
         model = Coinbase.call_api do
@@ -36,7 +36,8 @@ module Coinbase
               amount: asset.to_atomic_amount(amount).to_i.to_s,
               asset_id: asset.primary_denomination.to_s,
               destination: Coinbase::Destination.new(destination, network_id: network_id).address_id,
-              network_id: Coinbase.normalize_network(network_id)
+              network_id: Coinbase.normalize_network(network_id),
+              gasless: gasless
             }
           )
         end
@@ -140,10 +141,36 @@ module Coinbase
       transaction.signed_payload
     end
 
+    def sign(key)
+      raise unless key.is_a?(Eth::Key)
+
+      if !sponsored_send.nil?
+        sponsored_send.sign(key)
+
+        return
+      end
+
+      transaction.sign(key)
+    end
+
     # Returns the Transfer transaction.
     # @return [Coinbase::Transaction] The Transfer transaction
     def transaction
-      @transaction ||= Coinbase::Transaction.new(@model.transaction)
+      @transaction ||= begin
+        return nil if @model.transaction.nil?
+
+        Coinbase::Transaction.new(@model.transaction)
+      end
+    end
+
+    # Returns the SponsoredSend of the Transfer, if the transfer is gasless.
+    # @return [Coinbase::SponsoredSend] The SponsoredSend object
+    def sponsored_send
+      @sponsored_send ||= begin
+        return nil if @model.sponsored_send.nil?
+
+        Coinbase::SponsoredSend.new(@model.sponsored_send)
+      end
     end
 
     # Returns the Transaction Hash of the Transfer.
@@ -163,14 +190,21 @@ module Coinbase
     # @raise [RuntimeError] If the Transfer is not signed
     # @return [Transfer] The Transfer object
     def broadcast!
-      raise TransactionNotSignedError unless transaction.signed?
+      raise TransactionNotSignedError if !!sponsored_send && !sponsored_send.signed?
+      raise TransactionNotSignedError if !!transaction && !transaction.signed?
+
+      if sponsored_send.nil?
+        signed_payload = transaction.raw.hex
+      else
+        signed_payload = sponsored_send.signature
+      end
 
       @model = Coinbase.call_api do
         transfers_api.broadcast_transfer(
           wallet_id,
           from_address_id,
           id,
-          { signed_payload: transaction.raw.hex }
+          { signed_payload: signed_payload }
         )
       end
 

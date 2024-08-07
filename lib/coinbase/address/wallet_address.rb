@@ -40,7 +40,7 @@ module Coinbase
     # @param destination [Wallet | Address | String] The destination of the transfer. If a Wallet, sends to the Wallet's
     #  default address. If a String, interprets it as the address ID.
     # @return [Coinbase::Transfer] The Transfer object.
-    def transfer(amount, asset_id, destination)
+    def transfer(amount, asset_id, destination, gasless: false)
       ensure_can_sign!
       ensure_sufficient_balance!(amount, asset_id)
 
@@ -50,14 +50,14 @@ module Coinbase
         asset_id: asset_id,
         destination: destination,
         network_id: network_id,
-        wallet_id: wallet_id
+        wallet_id: wallet_id,
+        gasless: gasless
       )
 
       # If a server signer is managing keys, it will sign and broadcast the underlying transfer transaction out of band.
       return transfer if Coinbase.use_server_signer?
 
-      transfer.transaction.sign(@key)
-
+      transfer.sign(@key)
       transfer.broadcast!
       transfer
     end
