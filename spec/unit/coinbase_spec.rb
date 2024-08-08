@@ -8,7 +8,7 @@ describe Coinbase do
   end
 
   describe '#configure' do
-    subject do
+    subject(:configure) do
       described_class.configure do |config|
         config.api_key_private_key = api_key_private_key
         config.api_key_name = api_key_name
@@ -23,7 +23,7 @@ describe Coinbase do
       let(:api_key_private_key) { nil }
 
       it 'raises an exception' do
-        expect { subject }.to raise_error(Coinbase::InvalidConfiguration, /API key private key/)
+        expect { configure }.to raise_error(Coinbase::InvalidConfiguration, /API key private key/)
       end
     end
 
@@ -31,22 +31,24 @@ describe Coinbase do
       let(:api_key_name) { nil }
 
       it 'raises an exception' do
-        expect { subject }.to raise_error(Coinbase::InvalidConfiguration, /API key name/)
+        expect { configure }.to raise_error(Coinbase::InvalidConfiguration, /API key name/)
       end
     end
   end
 
   describe '.configure_from_json' do
-    subject do
+    before do
       described_class.configure_from_json(file_path)
     end
 
     let(:file_path) { 'spec/fixtures/cdp_api_key.json' }
 
-    it 'correctly configures the API key' do
-      expect { subject }.not_to raise_error
-      expect(described_class.configuration.api_key_private_key).not_to be_nil
+    it 'configures the API key name' do
       expect(described_class.configuration.api_key_name).not_to be_nil
+    end
+
+    it 'correctly configures the API key private key' do
+      expect(described_class.configuration.api_key_private_key).not_to be_nil
     end
   end
 
@@ -79,8 +81,8 @@ describe Coinbase do
   end
 
   describe '.default_user' do
-    let(:users_api) { double Coinbase::Client::UsersApi }
-    let(:user_model) { double 'User Model' }
+    let(:users_api) { instance_double(Coinbase::Client::UsersApi) }
+    let(:user_model) { instance_double(Coinbase::Client::User) }
 
     before do
       allow(Coinbase::Client::UsersApi).to receive(:new).and_return(users_api)

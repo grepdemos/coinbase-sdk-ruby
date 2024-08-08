@@ -339,10 +339,11 @@ describe Coinbase::WalletAddress do
       allow(staking_operation).to receive(:transactions).and_return([transaction])
       allow(transaction).to receive(:sign).and_return('signed_payload')
       allow(staking_operation).to receive(:broadcast!)
+
+      action
     end
 
     it 'creates a staking operation' do
-      subject
       expect(Coinbase::StakingOperation).to have_received(:create).with(
         amount,
         network_id,
@@ -356,12 +357,10 @@ describe Coinbase::WalletAddress do
     end
 
     it 'signs the transaction' do
-      subject
       expect(transaction).to have_received(:sign).with(key)
     end
 
-    it 'braodcasts the transaciton' do
-      subject
+    it 'broadcasts the transaction' do
       expect(staking_operation).to have_received(:broadcast!)
     end
   end

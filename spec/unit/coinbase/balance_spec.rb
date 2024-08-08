@@ -48,7 +48,7 @@ describe Coinbase::Balance do
     context 'when the balance model asset is :eth' do
       let(:asset) { eth_asset }
 
-      context 'and the specified asset_id is :eth' do
+      context 'when the specified asset_id is :eth' do
         let(:asset_id) { :eth }
 
         it 'returns a new Balance object with the correct amount' do
@@ -60,7 +60,7 @@ describe Coinbase::Balance do
         end
       end
 
-      context 'and the specified asset_id is :gwei' do
+      context 'when the specified asset_id is :gwei' do
         let(:asset_id) { :gwei }
 
         it 'returns a new Balance object with the correct amount' do
@@ -72,7 +72,7 @@ describe Coinbase::Balance do
         end
       end
 
-      context 'and the specified asset_id is :wei' do
+      context 'when the specified asset_id is :wei' do
         let(:asset_id) { :wei }
 
         it 'returns a new Balance object with the correct amount' do
@@ -84,7 +84,7 @@ describe Coinbase::Balance do
         end
       end
 
-      context 'and the specified asset_id is another asset type' do
+      context 'when the specified asset_id is another asset type' do
         let(:asset_id) { :other }
 
         it 'raise an error' do

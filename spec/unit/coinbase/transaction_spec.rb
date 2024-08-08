@@ -49,7 +49,7 @@ describe Coinbase::Transaction do
         expect(transaction).not_to be_signed
       end
 
-      context 'and the transaction is then signed' do
+      context 'when the transaction is then signed' do
         before { transaction.sign(from_key) }
 
         it 'returns true' do
@@ -177,7 +177,7 @@ describe Coinbase::Transaction do
         expect(Eth::Tx.signed?(transaction.raw)).to be(false)
       end
 
-      context 'and the transaction is signed' do
+      context 'when the transaction is signed' do
         before { transaction.sign(from_key) }
 
         it 'returns a signed transaction' do

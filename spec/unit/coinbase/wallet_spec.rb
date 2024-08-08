@@ -15,15 +15,15 @@ describe Coinbase::Wallet do
   let(:model_with_seed_active) do
     build(:wallet_model, network, :server_signer_active, id: wallet_id, seed: seed)
   end
-  let(:address_model1) do
+  let(:first_address_model) do
     build(:address_model, network, :with_seed, seed: seed, wallet_id: wallet_id, index: 0)
   end
-  let(:address_model2) do
+  let(:second_address_model) do
     build(:address_model, network, :with_seed, seed: seed, wallet_id: wallet_id, index: 1)
   end
-  let(:wallets_api) { double('Coinbase::Client::WalletsApi') }
-  let(:addresses_api) { double('Coinbase::Client::AddressesApi') }
-  let(:transfers_api) { double('Coinbase::Client::TransfersApi') }
+  let(:wallets_api) { instance_double(Coinbase::Client::WalletsApi) }
+  let(:addresses_api) { instance_double(Coinbase::Client::AddressesApi) }
+  let(:transfers_api) { instance_double(Coinbase::Client::TransfersApi) }
   let(:use_server_signer) { false }
   let(:configuration) do
     instance_double(Coinbase::Configuration, use_server_signer: use_server_signer, api_client: nil)
@@ -61,9 +61,9 @@ describe Coinbase::Wallet do
     end
 
     it 'calls the get wallet endpoint' do
-      expect(wallets_api).to receive(:get_wallet).with(wallet_id)
-
       fetched_wallet
+
+      expect(wallets_api).to have_received(:get_wallet).with(wallet_id)
     end
 
     it 'sets the model instance variable' do
@@ -155,7 +155,7 @@ describe Coinbase::Wallet do
               attestation_present = opts[:create_address_request][:attestation].is_a?(String)
               public_key_present && attestation_present
             end
-          ).and_return(address_model1)
+          ).and_return(first_address_model)
 
         allow(wallets_api)
           .to receive(:get_wallet)
@@ -167,8 +167,11 @@ describe Coinbase::Wallet do
         expect(created_wallet).to be_a(described_class)
       end
 
-      it 'creates a default address' do
-        expect(created_wallet.default_address).to be_a(Coinbase::Address)
+      it 'creates a default wallet address' do
+        expect(created_wallet.default_address).to be_a(Coinbase::WalletAddress)
+      end
+
+      it 'updates the wallet addresses' do
         expect(created_wallet.addresses.length).to eq(1)
       end
     end
@@ -192,7 +195,7 @@ describe Coinbase::Wallet do
 
               public_key.is_a?(String) && attestation.is_a?(String)
             end
-          ).and_return(address_model1)
+          ).and_return(first_address_model)
 
         allow(wallets_api)
           .to receive(:get_wallet)
@@ -235,7 +238,7 @@ describe Coinbase::Wallet do
         allow(addresses_api)
           .to receive(:create_address)
           .with(wallet_id, { create_address_request: {} })
-          .and_return(address_model1)
+          .and_return(first_address_model)
 
         allow(wallets_api)
           .to receive(:get_wallet)
@@ -247,8 +250,11 @@ describe Coinbase::Wallet do
         expect(created_wallet).to be_a(described_class)
       end
 
-      it 'creates a default address' do
-        expect(created_wallet.default_address).to be_a(Coinbase::Address)
+      it 'creates a default wallet address' do
+        expect(created_wallet.default_address).to be_a(Coinbase::WalletAddress)
+      end
+
+      it 'updates the wallet addresses' do
         expect(created_wallet.addresses.length).to eq(1)
       end
 
@@ -308,9 +314,9 @@ describe Coinbase::Wallet do
       end
 
       it 'initializes a new master seed' do
-        expect(MoneyTree::Master).to receive(:new).with(no_args)
-
         wallet
+
+        expect(MoneyTree::Master).to have_received(:new).with(no_args)
       end
 
       it 'sets the master seed' do
@@ -334,9 +340,9 @@ describe Coinbase::Wallet do
       end
 
       it 'initializes a master seed with the specified value' do
-        expect(MoneyTree::Master).to receive(:new).with(seed_hex: seed)
-
         wallet
+
+        expect(MoneyTree::Master).to have_received(:new).with(seed_hex: seed)
       end
 
       it 'sets the master seed' do
@@ -363,9 +369,9 @@ describe Coinbase::Wallet do
         end
 
         it 'does not generate a new master seed' do
-          expect(MoneyTree::Master).not_to receive(:new)
-
           wallet
+
+          expect(MoneyTree::Master).not_to have_received(:new)
         end
 
         it 'does not set the master seed' do
@@ -415,14 +421,14 @@ describe Coinbase::Wallet do
         expect(seedless_wallet.instance_variable_get(:@master)).to be_a(MoneyTree::Master)
       end
 
-      context 'and the addresses are subsequently loaded' do
+      context 'when the addresses are subsequently loaded' do
         before do
           allow(addresses_api)
             .to receive(:list_addresses)
             .with(wallet_id, { limit: 20 })
             .and_return(
               Coinbase::Client::AddressList.new(
-                data: [address_model1, address_model2],
+                data: [first_address_model, second_address_model],
                 total_count: 2
               )
             )
@@ -447,7 +453,7 @@ describe Coinbase::Wallet do
           .with(wallet_id, { limit: 20 })
           .and_return(
             Coinbase::Client::AddressList.new(
-              data: [address_model1, address_model2],
+              data: [first_address_model, second_address_model],
               total_count: 1
             )
           )
@@ -525,7 +531,7 @@ describe Coinbase::Wallet do
     end
 
     context 'when the wallet does not have a default address initially' do
-      let(:created_address_model) { address_model1 }
+      let(:created_address_model) { first_address_model }
 
       before do
         allow(wallets_api)
@@ -534,20 +540,22 @@ describe Coinbase::Wallet do
           .and_return(model_with_default_address)
       end
 
+      it 'does not have a default address intially' do
+        expect(wallet.default_address).to be_nil
+      end
+
       it 'creates a new address' do
         expect(created_address).to be_a(Coinbase::Address)
       end
 
       it 'reloads the wallet with the new default address' do
-        expect(wallet.default_address).to be_nil
-
         expect(created_address).to eq(wallet.default_address)
       end
     end
 
     context 'when an address already exists' do
-      let(:existing_addresses) { [address_model1] }
-      let(:created_address_model) { address_model2 }
+      let(:existing_addresses) { [first_address_model] }
+      let(:created_address_model) { second_address_model }
       let(:wallet) { described_class.new(model_with_default_address, seed: seed) }
 
       before do
@@ -570,7 +578,7 @@ describe Coinbase::Wallet do
     context 'when using a server signer' do
       subject(:created_address) { wallet.create_address }
 
-      let(:created_address_model) { address_model1 }
+      let(:created_address_model) { first_address_model }
 
       before do
         allow(addresses_api)
@@ -590,7 +598,7 @@ describe Coinbase::Wallet do
   end
 
   describe '#default_address' do
-    let(:address_models) { [address_model1, address_model2] }
+    let(:address_models) { [first_address_model, second_address_model] }
     let(:wallet) { described_class.new(model, seed: '') }
 
     before do
@@ -603,17 +611,17 @@ describe Coinbase::Wallet do
     context 'when the wallet has a default address' do
       subject(:wallet) { described_class.new(model_with_default_address, seed: '') }
 
-      let(:expected_address) { Coinbase::WalletAddress.new(address_model1, nil) }
+      let(:expected_address) { Coinbase::WalletAddress.new(first_address_model, nil) }
 
       it 'returns the default address' do
-        expect(wallet.default_address.id).to eq(address_model1.address_id)
+        expect(wallet.default_address.id).to eq(first_address_model.address_id)
       end
 
       it 'sets the wallet ID' do
         expect(wallet.default_address.wallet_id).to eq(wallet_id)
       end
 
-      it 'returns a WalletAddress' do
+      it 'returns a wallet address' do
         expect(wallet.default_address).to be_a(Coinbase::WalletAddress)
       end
     end
@@ -626,9 +634,9 @@ describe Coinbase::Wallet do
   end
 
   describe '#address' do
-    subject(:address) { wallet.address(address_model2.address_id) }
+    subject(:address) { wallet.address(second_address_model.address_id) }
 
-    let(:address_models) { [address_model1, address_model2] }
+    let(:address_models) { [first_address_model, second_address_model] }
     let(:wallet) { described_class.new(model, seed: '') }
 
     before do
@@ -638,16 +646,19 @@ describe Coinbase::Wallet do
         .and_return(Coinbase::Client::AddressList.new(data: address_models, total_count: 2))
     end
 
+    it 'returns a wallet address' do
+      expect(address).to be_a(Coinbase::WalletAddress)
+    end
+
     it 'returns the correct address' do
-      expect(address).to be_a(Coinbase::Address)
-      expect(address.id).to eq(address_model2.address_id)
+      expect(address.id).to eq(second_address_model.address_id)
     end
   end
 
   describe '#addresses' do
     subject(:wallet) { described_class.new(model, seed: '') }
 
-    let(:address_models) { [address_model1, address_model2] }
+    let(:address_models) { [first_address_model, second_address_model] }
     let(:total_count) { address_models.length }
 
     before do
@@ -711,7 +722,7 @@ describe Coinbase::Wallet do
     end
 
     before do
-      expect(wallets_api).to receive(:list_wallet_balances).and_return(response)
+      allow(wallets_api).to receive(:list_wallet_balances).and_return(response)
     end
 
     it 'returns a hash with an ETH and USDC balance' do
@@ -725,7 +736,7 @@ describe Coinbase::Wallet do
     let(:response) { build(:balance_model, network, amount: amount) }
 
     before do
-      expect(wallets_api).to receive(:get_wallet_balance).with(wallet_id, 'eth').and_return(response)
+      allow(wallets_api).to receive(:get_wallet_balance).with(wallet_id, 'eth').and_return(response)
     end
 
     it 'returns the correct ETH balance' do
@@ -748,17 +759,17 @@ describe Coinbase::Wallet do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [first_address_model], total_count: 1))
     end
 
     %i[stake unstake claim_stake].each do |method|
       describe "##{method}" do
-        subject { wallet.send(method, 5, :eth) }
+        subject(:stake_method) { wallet.send(method, 5, :eth) }
 
         before do
           allow(wallet.default_address).to receive(method)
 
-          subject
+          stake_method
         end
 
         it "calls #{method} on the default address" do
@@ -766,7 +777,7 @@ describe Coinbase::Wallet do
         end
 
         context 'with specified mode and options' do
-          subject { wallet.send(method, 5, :eth, mode: :native, options: { a: 'b' }) }
+          subject(:stake_method) { wallet.send(method, 5, :eth, mode: :native, options: { a: 'b' }) }
 
           it "calls #{method} with the specified mode and options" do
             expect(wallet.default_address).to have_received(method).with(5, :eth, mode: :native, options: { a: 'b' })
@@ -777,12 +788,12 @@ describe Coinbase::Wallet do
 
     %i[staking_balances stakeable_balance unstakeable_balance claimable_balance].each do |method|
       describe "##{method}" do
-        subject { wallet.send(method, :eth) }
+        subject(:stake_balance_method) { wallet.send(method, :eth) }
 
         before do
           allow(wallet.default_address).to receive(method)
 
-          subject
+          stake_balance_method
         end
 
         it "calls #{method} on the default address" do
@@ -790,7 +801,7 @@ describe Coinbase::Wallet do
         end
 
         context 'with specified mode and options' do
-          subject { wallet.send(method, :eth, mode: :native, options: { a: 'b' }) }
+          subject(:stake_balance_method) { wallet.send(method, :eth, mode: :native, options: { a: 'b' }) }
 
           it "calls #{method} with the specified mode and options" do
             expect(wallet.default_address).to have_received(method).with(:eth, mode: :native, options: { a: 'b' })
@@ -805,12 +816,12 @@ describe Coinbase::Wallet do
       described_class.new(model_with_default_address, seed: '')
     end
 
-    let(:transfer) { double('Coinbase::Transfer') }
+    let(:transfer) { instance_double(Coinbase::Transfer) }
     let(:amount) { 5 }
     let(:asset_id) { :eth }
     let(:other_wallet_id) { SecureRandom.uuid }
     let(:other_wallet_model) do
-      Coinbase::Client::Wallet.new(id: other_wallet_id, network_id: 'base-sepolia', default_address: address_model2)
+      build(:wallet_model, network, id: other_wallet_id, default_address: second_address_model)
     end
     let(:other_wallet) { described_class.new(other_wallet_model, seed: '') }
 
@@ -818,12 +829,12 @@ describe Coinbase::Wallet do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(other_wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model2], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [second_address_model], total_count: 1))
 
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [first_address_model], total_count: 1))
     end
 
     context 'when the destination is a Wallet' do
@@ -877,7 +888,7 @@ describe Coinbase::Wallet do
       described_class.new(model_with_default_address, seed: '')
     end
 
-    let(:trade) { double('Coinbase::Trade') }
+    let(:trade) { instance_double(Coinbase::Trade) }
     let(:amount) { 5 }
     let(:from_asset_id) { :eth }
     let(:to_asset_id) { :weth }
@@ -886,7 +897,7 @@ describe Coinbase::Wallet do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [first_address_model], total_count: 1))
 
       allow(wallet.default_address)
         .to receive(:trade)
@@ -943,11 +954,11 @@ describe Coinbase::Wallet do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [first_address_model], total_count: 1))
 
       allow(addresses_api)
         .to receive(:request_faucet_funds)
-        .with(wallet_id, address_model1.address_id)
+        .with(wallet_id, first_address_model.address_id)
         .and_return(faucet_transaction_model)
     end
 
@@ -1078,7 +1089,7 @@ describe Coinbase::Wallet do
   describe '#load_seed' do
     let(:address_list_model) do
       Coinbase::Client::AddressList.new(
-        data: [address_model1],
+        data: [first_address_model],
         total_count: 1
       )
     end
@@ -1132,7 +1143,7 @@ describe Coinbase::Wallet do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
-        .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
+        .and_return(Coinbase::Client::AddressList.new(data: [first_address_model], total_count: 1))
     end
 
     after { file.unlink }
@@ -1211,7 +1222,7 @@ describe Coinbase::Wallet do
       end
 
       it 'includes the default address' do
-        expect(wallet.inspect).to include(address_model1.address_id)
+        expect(wallet.inspect).to include(first_address_model.address_id)
       end
     end
   end

@@ -17,7 +17,7 @@ describe Coinbase::Transfer do
     build(:transfer_model, network_id, key: from_key, to_key: to_key, whole_amount: whole_amount)
   end
   let(:wallet_id) { model.wallet_id }
-  let(:transfers_api) { double('Coinbase::Client::TransfersApi') }
+  let(:transfers_api) { instance_double(Coinbase::Client::TransfersApi) }
 
   before do
     allow(Coinbase::Client::TransfersApi).to receive(:new).and_return(transfers_api)
@@ -263,20 +263,17 @@ describe Coinbase::Transfer do
     end
 
     it 'updates the transfer transaction' do
-      expect(transfer.transaction.status).to eq(Coinbase::Transaction::Status::PENDING)
       expect(transfer.reload.transaction.status).to eq(Coinbase::Transaction::Status::COMPLETE)
     end
 
     it 'updates properties on the transfer' do
-      expect(transfer.amount).to eq(whole_amount)
       expect(transfer.reload.amount).to eq(updated_eth_amount)
     end
   end
 
   describe '#wait!' do
     before do
-      # TODO: This isn't working for some reason.
-      allow(transfer).to receive(:sleep)
+      allow(transfer).to receive(:sleep) # rubocop:disable RSpec/SubjectStub
 
       allow(transfers_api)
         .to receive(:get_transfer)
@@ -288,8 +285,7 @@ describe Coinbase::Transfer do
       let(:updated_model) { build(:transfer_model, network_id, :completed) }
 
       it 'returns the completed Transfer' do
-        expect(transfer.wait!).to eq(transfer)
-        expect(transfer.status).to eq(Coinbase::Transaction::Status::COMPLETE)
+        expect(transfer.wait!.status).to eq(Coinbase::Transaction::Status::COMPLETE)
       end
     end
 
@@ -297,8 +293,7 @@ describe Coinbase::Transfer do
       let(:updated_model) { build(:transfer_model, network_id, :failed) }
 
       it 'returns the failed Transfer' do
-        expect(transfer.wait!).to eq(transfer)
-        expect(transfer.status).to eq(Coinbase::Transaction::Status::FAILED)
+        expect(transfer.wait!.status).to eq(Coinbase::Transaction::Status::FAILED)
       end
     end
 

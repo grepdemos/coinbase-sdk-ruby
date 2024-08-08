@@ -113,9 +113,7 @@ describe Coinbase::Asset do
     let(:assets_api) { instance_double(Coinbase::Client::AssetsApi) }
     let(:asset_id) { :eth }
     let(:network_id) { :base_sepolia }
-    let(:asset_model) do
-      Coinbase::Client::Asset.new(network_id: 'base-sepolia', asset_id: 'eth', decimals: 18)
-    end
+    let(:asset_model) { build(:asset_model) }
 
     before do
       allow(Coinbase::Client::AssetsApi).to receive(:new).and_return(assets_api)
@@ -123,9 +121,9 @@ describe Coinbase::Asset do
     end
 
     it 'is called with the asset_id' do
-      expect(assets_api).to receive(:get_asset).with('base-sepolia', asset_id.to_s)
-
       asset
+
+      expect(assets_api).to have_received(:get_asset).with('base-sepolia', asset_id.to_s)
     end
 
     it 'returns an Asset' do
@@ -137,7 +135,7 @@ describe Coinbase::Asset do
     end
 
     it 'sets the asset_id' do
-      expect(asset.asset_id).to eq(:eth)
+      expect(asset.asset_id).to eq(asset_id)
     end
 
     it 'sets the decimals' do
@@ -148,9 +146,9 @@ describe Coinbase::Asset do
       let(:asset_id) { :gwei }
 
       it 'fetches the `eth` primary denomination' do
-        expect(assets_api).to receive(:get_asset).with('base-sepolia', 'eth')
-
         asset
+
+        expect(assets_api).to have_received(:get_asset).with('base-sepolia', 'eth')
       end
 
       it 'sets the asset_id' do
@@ -166,9 +164,9 @@ describe Coinbase::Asset do
       let(:asset_id) { :wei }
 
       it 'fetches the `eth` primary denomination' do
-        expect(assets_api).to receive(:get_asset).with('base-sepolia', 'eth')
-
         asset
+
+        expect(assets_api).to have_received(:get_asset).with('base-sepolia', 'eth')
       end
 
       it 'sets the asset_id' do

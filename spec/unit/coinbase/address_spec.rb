@@ -22,9 +22,7 @@ describe Coinbase::Address do
   describe '#to_s' do
     subject { address.to_s }
 
-    it 'includes the network ID and address ID' do
-      expect(subject).to include(network_id.to_s, address_id)
-    end
+    it { is_expected.to include(network_id.to_s, address_id) }
   end
 
   describe '#inspect' do

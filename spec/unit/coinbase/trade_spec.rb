@@ -36,7 +36,7 @@ describe Coinbase::Trade do
       approve_transaction: approve_transaction_model
     )
   end
-  let(:trades_api) { double('Coinbase::Client::TradesApi') }
+  let(:trades_api) { instance_double(Coinbase::Client::TradesApi) }
 
   before do
     allow(Coinbase::Client::TradesApi).to receive(:new).and_return(trades_api)
@@ -308,7 +308,7 @@ describe Coinbase::Trade do
         build(:transaction_model, :broadcasted, key: from_key)
       end
 
-      context 'and both transactions are signed' do
+      context 'when both transactions are signed' do
         let(:broadcast_trade_request) do
           {
             signed_payload: trade.transaction.raw.hex,
@@ -348,7 +348,8 @@ describe Coinbase::Trade do
         end
 
         it 'updates the approve transaction status' do
-          expect(broadcasted_trade.transaction.status).to eq(Coinbase::Transaction::Status::BROADCAST)
+          expect(broadcasted_trade.approve_transaction.status)
+            .to eq(Coinbase::Transaction::Status::BROADCAST)
         end
 
         it 'sets the approve transaction signed payload' do
@@ -357,7 +358,7 @@ describe Coinbase::Trade do
         end
       end
 
-      context 'and the approve transaction is not signed' do
+      context 'when the approve transaction is not signed' do
         before { trade.transaction.sign(from_key) }
 
         it 'raises an error' do
@@ -365,7 +366,7 @@ describe Coinbase::Trade do
         end
       end
 
-      context 'and the transaction is not signed' do
+      context 'when the transaction is not signed' do
         before { trade.approve_transaction.sign(from_key) }
 
         it 'raises an error' do
@@ -404,12 +405,10 @@ describe Coinbase::Trade do
     end
 
     it 'updates the trade transaction' do
-      expect(trade.transaction.status).to eq(Coinbase::Transaction::Status::PENDING)
       expect(trade.reload.transaction.status).to eq(Coinbase::Transaction::Status::COMPLETE)
     end
 
     it 'updates properties on the trade' do
-      expect(trade.to_amount).to eq(usdc_amount)
       expect(trade.reload.to_amount).to eq(updated_usdc_amount)
     end
   end
@@ -430,8 +429,7 @@ describe Coinbase::Trade do
     end
 
     before do
-      # TODO: This isn't working for some reason.
-      allow(trade).to receive(:sleep)
+      allow(trade).to receive(:sleep) # rubocop:disable RSpec/SubjectStub
 
       allow(trades_api)
         .to receive(:get_trade)
@@ -443,8 +441,7 @@ describe Coinbase::Trade do
       let(:updated_transaction_model) { build(:transaction_model, :completed, key: from_key) }
 
       it 'returns the completed Trade' do
-        expect(trade.wait!).to eq(trade)
-        expect(trade.status).to eq(Coinbase::Transaction::Status::COMPLETE)
+        expect(trade.wait!.status).to eq(Coinbase::Transaction::Status::COMPLETE)
       end
     end
 
@@ -452,8 +449,7 @@ describe Coinbase::Trade do
       let(:updated_transaction_model) { build(:transaction_model, :failed, key: from_key) }
 
       it 'returns the failed Trade' do
-        expect(trade.wait!).to eq(trade)
-        expect(trade.status).to eq(Coinbase::Transaction::Status::FAILED)
+        expect(trade.wait!.status).to eq(Coinbase::Transaction::Status::FAILED)
       end
     end
 

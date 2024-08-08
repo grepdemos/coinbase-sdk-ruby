@@ -41,7 +41,7 @@ describe Coinbase::StakingReward do
       expect(Coinbase::Asset).to have_received(:fetch).with(network_id, asset_id)
     end
 
-    it 'fetches the staking rewards' do
+    it 'fetches the first page of staking rewards' do
       list.to_a
 
       expect(stake_api).to have_received(:fetch_staking_rewards).with(
@@ -53,6 +53,11 @@ describe Coinbase::StakingReward do
         format: format,
         next_page: 'next_page'
       )
+    end
+
+    it 'fetches the last page of staking rewards' do
+      list.to_a
+
       expect(stake_api).to have_received(:fetch_staking_rewards).with(
         network_id: 'network-id',
         asset_id: asset_id,

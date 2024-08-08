@@ -56,12 +56,12 @@ describe Coinbase::User do
   end
 
   describe '#wallets' do
-    let(:wallet_model1) { build(:wallet_model, :without_default_address, id: 'wallet-1') }
-    let(:wallet_model2) { build(:wallet_model, :without_default_address, id: 'wallet-2') }
+    let(:first_wallet) { build(:wallet_model, :without_default_address, id: 'wallet-1') }
+    let(:second_wallet) { build(:wallet_model, :without_default_address, id: 'wallet-2') }
     let(:wallet_enumerator) do
       Enumerator.new do |yielder|
-        yielder << wallet_model1
-        yielder << wallet_model2
+        yielder << first_wallet
+        yielder << second_wallet
       end
     end
 

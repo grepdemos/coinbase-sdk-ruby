@@ -21,7 +21,7 @@ describe Coinbase do
   end
 
   describe 'v0.0.9 SDK' do
-    it 'behaves as expected' do
+    it 'behaves as expected' do # rubocop:disable RSpec/NoExpectationExample
       user = fetch_user_test
       new_address = create_new_address_test(user)
       imported_wallet = import_wallet_test(user)
@@ -31,10 +31,9 @@ describe Coinbase do
     end
   end
 
-  describe 'use for serve signer' do
-    it 'behaves as expected' do
-      # Use Server-Signer only half the runs to save test time.
-      skip if rand >= 0.5
+  # Use Server-Signer only half the runs to save test time.
+  describe 'use for serve signer', skip: rand >= 0.5 do
+    it 'behaves as expected' do # rubocop:disable RSpec/NoExpectationExample
       described_class.configuration.use_server_signer = true
       signer = Coinbase::ServerSigner.default
       puts "Using ServerSigner with ID: #{signer.id}"
