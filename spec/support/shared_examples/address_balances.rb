@@ -152,7 +152,7 @@ shared_examples 'an address that supports requesting faucet funds' do |_operatio
         end
 
         it 'raises a FaucetLimitReachedError' do
-          expect { address.faucet }.to raise_error(::Coinbase::FaucetLimitReachedError)
+          expect { address.faucet }.to raise_error(Coinbase::FaucetLimitReachedError)
         end
       end
 
@@ -168,7 +168,7 @@ shared_examples 'an address that supports requesting faucet funds' do |_operatio
         end
 
         it 'raises an internal error' do
-          expect { address.faucet }.to raise_error(::Coinbase::InternalError)
+          expect { address.faucet }.to raise_error(Coinbase::InternalError)
         end
       end
     end

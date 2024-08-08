@@ -11,7 +11,7 @@ describe Coinbase do
     api_key_private_key = ENV['API_KEY_PRIVATE_KEY'].gsub('\n', "\n")
 
     # Use default API URL if not provided
-    api_url = ENV['API_URL']
+    api_url = ENV.fetch('API_URL', nil)
 
     Coinbase.configure do |config|
       config.api_key_name = api_key_name
@@ -71,7 +71,7 @@ def create_new_address_test(user)
 end
 
 def import_wallet_test(user)
-  data_string = ENV['WALLET_DATA']
+  data_string = ENV.fetch('WALLET_DATA', nil)
   expect(data_string).not_to be_nil
   puts 'Importing wallet with balance...'
 
@@ -128,7 +128,7 @@ end
 
 def fetch_existing_wallet(user)
   # TODO: Change to using get method when available.
-  data_string = ENV['SERVER_SIGNER_WALLET_DATA']
+  data_string = ENV.fetch('SERVER_SIGNER_WALLET_DATA', nil)
   expect(data_string).not_to be_nil
   decoded_data = Base64.decode64(data_string)
   data_hash = JSON.parse(decoded_data)

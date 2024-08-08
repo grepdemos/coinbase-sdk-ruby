@@ -10,7 +10,6 @@ describe Coinbase::Trade do
   let(:eth_amount) { Coinbase::Asset.from_model(eth_asset).from_atomic_amount(from_amount) }
   let(:usdc_amount) { Coinbase::Asset.from_model(usdc_asset).from_atomic_amount(to_amount) }
   let(:trade_id) { SecureRandom.uuid }
-  let(:transaction_hash) { '0x6c087c1676e8269dd81e0777244584d0cbfd39b6997b3477242a008fa9349e11' }
   let(:eth_asset) { build(:asset_model) }
   let(:usdc_asset) { build(:asset_model, :usdc) }
   let(:transaction_model) { build(:transaction_model, key: from_key) }

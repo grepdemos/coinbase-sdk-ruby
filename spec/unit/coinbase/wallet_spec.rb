@@ -745,94 +745,51 @@ describe Coinbase::Wallet do
 
     subject(:wallet) { described_class.new(model_with_default_address, seed: '') }
 
-    describe '#stake' do
-      before do
-        allow(wallet.default_address).to receive(:stake)
-      end
+    %i[stake unstake claim_stake].each do |method|
+      describe "##{method}" do
+        subject { wallet.send(method, 5, :eth) }
 
-      subject(:stake) { wallet.stake(5, :eth) }
+        before do
+          allow(wallet.default_address).to receive(method)
 
-      it 'calls stake' do
-        subject
-        expect(wallet.default_address).to have_received(:stake).with(5, :eth, mode: :default, options: {})
-      end
-    end
+          subject
+        end
 
-    describe '#unstake' do
-      before do
-        allow(wallet.default_address).to receive(:unstake)
-      end
+        it "calls #{method} on the default address" do
+          expect(wallet.default_address).to have_received(method).with(5, :eth)
+        end
 
-      subject(:unstake) { wallet.unstake(5, :eth) }
+        context 'with specified mode and options' do
+          subject { wallet.send(method, 5, :eth, mode: :native, options: { a: 'b' }) }
 
-      it 'calls unstake' do
-        subject
-        expect(wallet.default_address).to have_received(:unstake).with(5, :eth, mode: :default, options: {})
+          it "calls #{method} with the specified mode and options" do
+            expect(wallet.default_address).to have_received(method).with(5, :eth, mode: :native, options: { a: 'b' })
+          end
+        end
       end
     end
 
-    describe '#claim_stake' do
-      before do
-        allow(wallet.default_address).to receive(:claim_stake)
-      end
+    %i[staking_balances stakeable_balance unstakeable_balance claimable_balance].each do |method|
+      describe "##{method}" do
+        subject { wallet.send(method, :eth) }
 
-      subject(:claim_stake) { wallet.claim_stake(5, :eth) }
+        before do
+          allow(wallet.default_address).to receive(method)
 
-      it 'calls claim_stake' do
-        subject
-        expect(wallet.default_address).to have_received(:claim_stake).with(5, :eth, mode: :default, options: {})
-      end
-    end
+          subject
+        end
 
-    describe '#staking_balances' do
-      before do
-        allow(wallet.default_address).to receive(:staking_balances)
-      end
+        it "calls #{method} on the default address" do
+          expect(wallet.default_address).to have_received(method).with(:eth)
+        end
 
-      subject(:staking_balances) { wallet.staking_balances(:eth) }
+        context 'with specified mode and options' do
+          subject { wallet.send(method, :eth, mode: :native, options: { a: 'b' }) }
 
-      it 'calls staking_balances' do
-        subject
-        expect(wallet.default_address).to have_received(:staking_balances).with(:eth, mode: :default, options: {})
-      end
-    end
-
-    describe '#stakeable_balance' do
-      before do
-        allow(wallet.default_address).to receive(:stakeable_balance)
-      end
-
-      subject(:stakeable_balance) { wallet.stakeable_balance(:eth) }
-
-      it 'calls stakeable_balance' do
-        subject
-        expect(wallet.default_address).to have_received(:stakeable_balance).with(:eth, mode: :default, options: {})
-      end
-    end
-
-    describe '#unstakeable_balance' do
-      before do
-        allow(wallet.default_address).to receive(:unstakeable_balance)
-      end
-
-      subject(:unstakeable_balance) { wallet.unstakeable_balance(:eth) }
-
-      it 'calls unstakeable_balance' do
-        subject
-        expect(wallet.default_address).to have_received(:unstakeable_balance).with(:eth, mode: :default, options: {})
-      end
-    end
-
-    describe '#claimable_balance' do
-      before do
-        allow(wallet.default_address).to receive(:claimable_balance)
-      end
-
-      subject(:claimable_balance) { wallet.claimable_balance(:eth) }
-
-      it 'calls claimable_balance' do
-        subject
-        expect(wallet.default_address).to have_received(:claimable_balance).with(:eth, mode: :default, options: {})
+          it "calls #{method} with the specified mode and options" do
+            expect(wallet.default_address).to have_received(method).with(:eth, mode: :native, options: { a: 'b' })
+          end
+        end
       end
     end
   end
@@ -970,7 +927,7 @@ describe Coinbase::Wallet do
 
   describe '#faucet' do
     let(:faucet_transaction_model) do
-      Coinbase::Client::FaucetTransaction.new({ 'transaction_hash': '0x123456789' })
+      Coinbase::Client::FaucetTransaction.new({ transaction_hash: '0x123456789' })
     end
     let(:wallet) { described_class.new(model_with_default_address, seed: '') }
 

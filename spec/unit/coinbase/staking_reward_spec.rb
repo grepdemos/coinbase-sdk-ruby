@@ -120,8 +120,8 @@ describe Coinbase::StakingReward do
 
     it 'returns a string representation of the StakingReward' do
       expected_string = "Coinbase::StakingReward{date: '#{staking_reward_model.date}' " \
-        "address_id: '#{staking_reward_model.address_id}' " \
-        "amount: '#{staking_reward.amount.to_f}'}"
+                        "address_id: '#{staking_reward_model.address_id}' " \
+                        "amount: '#{staking_reward.amount.to_f}'}"
       expect(staking_reward.to_s).to eq(expected_string)
     end
   end
