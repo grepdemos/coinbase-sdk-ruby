@@ -13,7 +13,7 @@ describe Coinbase do
     # Use default API URL if not provided
     api_url = ENV.fetch('API_URL', nil)
 
-    Coinbase.configure do |config|
+    described_class.configure do |config|
       config.api_key_name = api_key_name
       config.api_key_private_key = api_key_private_key
       config.api_url = api_url if api_url
@@ -35,7 +35,7 @@ describe Coinbase do
     it 'behaves as expected' do
       # Use Server-Signer only half the runs to save test time.
       skip if rand >= 0.5
-      Coinbase.configuration.use_server_signer = true
+      described_class.configuration.use_server_signer = true
       signer = Coinbase::ServerSigner.default
       puts "Using ServerSigner with ID: #{signer.id}"
 

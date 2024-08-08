@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 describe Coinbase::Trade do
+  subject(:trade) do
+    described_class.new(model)
+  end
+
   let(:from_key) { Eth::Key.new }
   let(:network_id) { :base_sepolia }
   let(:wallet_id) { SecureRandom.uuid }
@@ -38,22 +42,7 @@ describe Coinbase::Trade do
     allow(Coinbase::Client::TradesApi).to receive(:new).and_return(trades_api)
   end
 
-  subject(:trade) do
-    described_class.new(model)
-  end
-
   describe '.create' do
-    let(:normalized_from_asset_id) { 'eth' }
-    let(:normalized_to_asset_id) { 'usdc' }
-
-    let(:create_trade_request) do
-      {
-        amount: from_amount.to_i.to_s,
-        from_asset_id: normalized_from_asset_id,
-        to_asset_id: normalized_to_asset_id
-      }
-    end
-
     subject(:trade) do
       described_class.create(
         address_id: address_id,
@@ -63,6 +52,17 @@ describe Coinbase::Trade do
         network_id: network_id,
         wallet_id: wallet_id
       )
+    end
+
+    let(:normalized_from_asset_id) { 'eth' }
+    let(:normalized_to_asset_id) { 'usdc' }
+
+    let(:create_trade_request) do
+      {
+        amount: from_amount.to_i.to_s,
+        from_asset_id: normalized_from_asset_id,
+        to_asset_id: normalized_to_asset_id
+      }
     end
 
     before do
@@ -76,7 +76,7 @@ describe Coinbase::Trade do
     end
 
     it 'creates a new Trade' do
-      expect(trade).to be_a(Coinbase::Trade)
+      expect(trade).to be_a(described_class)
     end
 
     it 'sets the trade properties' do
@@ -89,7 +89,7 @@ describe Coinbase::Trade do
       let(:eth_amount) { from_amount }
 
       it 'creates a new Trade' do
-        expect(trade).to be_a(Coinbase::Trade)
+        expect(trade).to be_a(described_class)
       end
 
       it 'constructs the trade with the primary denomination from asset' do
@@ -104,7 +104,7 @@ describe Coinbase::Trade do
       let(:normalized_to_asset_id) { 'eth' }
 
       it 'creates a new Trade' do
-        expect(trade).to be_a(Coinbase::Trade)
+        expect(trade).to be_a(described_class)
       end
 
       it 'constructs the trade with the primary denomination to asset' do
@@ -114,17 +114,17 @@ describe Coinbase::Trade do
   end
 
   describe '.list' do
+    subject(:enumerator) do
+      described_class.list(wallet_id: wallet_id, address_id: address_id)
+    end
+
     let(:api) { trades_api }
     let(:fetch_params) { ->(page) { [wallet_id, address_id, { limit: 100, page: page }] } }
     let(:resource_list_klass) { Coinbase::Client::TradeList }
-    let(:item_klass) { Coinbase::Trade }
+    let(:item_klass) { described_class }
     let(:item_initialize_args) { nil }
     let(:create_model) do
       ->(id) { Coinbase::Client::Trade.new(trade_id: id, network_id: 'base-sepolia') }
-    end
-
-    subject(:enumerator) do
-      Coinbase::Trade.list(wallet_id: wallet_id, address_id: address_id)
     end
 
     it_behaves_like 'it is a paginated enumerator', :trades
@@ -132,7 +132,7 @@ describe Coinbase::Trade do
 
   describe '#initialize' do
     it 'initializes a new Trade' do
-      expect(trade).to be_a(Coinbase::Trade)
+      expect(trade).to be_a(described_class)
     end
 
     context 'when initialized with a model of a different type' do
@@ -247,6 +247,8 @@ describe Coinbase::Trade do
   end
 
   describe '#broadcast!' do
+    subject(:broadcasted_trade) { trade.broadcast! }
+
     let(:broadcasted_approve_transaction_model) { nil }
     let(:broadcasted_transaction_model) { build(:transaction_model, :broadcasted, key: from_key) }
     let(:broadcasted_trade_model) do
@@ -257,8 +259,6 @@ describe Coinbase::Trade do
         address_id: address_id
       )
     end
-
-    subject(:broadcasted_trade) { trade.broadcast! }
 
     context 'when the transaction is signed' do
       let(:broadcast_trade_request) do
@@ -277,7 +277,7 @@ describe Coinbase::Trade do
       end
 
       it 'returns the updated Trade' do
-        expect(broadcasted_trade).to be_a(Coinbase::Trade)
+        expect(broadcasted_trade).to be_a(described_class)
       end
 
       it 'broadcasts the transaction' do
@@ -329,7 +329,7 @@ describe Coinbase::Trade do
         end
 
         it 'returns the updated Trade' do
-          expect(broadcasted_trade).to be_a(Coinbase::Trade)
+          expect(broadcasted_trade).to be_a(described_class)
         end
 
         it 'broadcasts the transaction with both signed payloads' do

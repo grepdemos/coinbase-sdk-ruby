@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 describe Coinbase::Wallet do
+  subject(:wallet) { described_class.new(model) }
+
   let(:wallet_id) { SecureRandom.uuid }
   let(:network) { :base_sepolia }
   let(:network_id) { Coinbase.normalize_network(network) }
@@ -27,8 +29,6 @@ describe Coinbase::Wallet do
     instance_double(Coinbase::Configuration, use_server_signer: use_server_signer, api_client: nil)
   end
 
-  subject(:wallet) { described_class.new(model) }
-
   before do
     allow(Coinbase::Client::AddressesApi).to receive(:new).and_return(addresses_api)
     allow(Coinbase::Client::WalletsApi).to receive(:new).and_return(wallets_api)
@@ -37,13 +37,14 @@ describe Coinbase::Wallet do
   end
 
   describe '.list' do
+    subject(:enumerator) { described_class.list }
+
     let(:api) { wallets_api }
     let(:fetch_params) { ->(page) { [{ limit: 100, page: page }] } }
     let(:resource_list_klass) { Coinbase::Client::WalletList }
-    let(:item_klass) { Coinbase::Wallet }
+    let(:item_klass) { described_class }
     let(:item_initialize_args) { { seed: '' } }
     let(:create_model) { ->(id) { build(:wallet_model, network, :without_default_address, id: id) } }
-    subject(:enumerator) { described_class.list }
 
     it_behaves_like 'it is a paginated enumerator', :wallets
   end
@@ -56,7 +57,7 @@ describe Coinbase::Wallet do
     end
 
     it 'returns a Wallet' do
-      expect(fetched_wallet).to be_a(Coinbase::Wallet)
+      expect(fetched_wallet).to be_a(described_class)
     end
 
     it 'calls the get wallet endpoint' do
@@ -75,11 +76,11 @@ describe Coinbase::Wallet do
   end
 
   describe '.import' do
+    subject(:imported_wallet) { described_class.import(exported_data) }
+
     let(:wallet_id) { SecureRandom.uuid }
     let(:wallet_model) { build(:wallet_model, network, id: wallet_id) }
     let(:exported_data) { Coinbase::Wallet::Data.new(wallet_id: wallet_id, seed: seed) }
-
-    subject(:imported_wallet) { Coinbase::Wallet.import(exported_data) }
 
     before do
       allow(wallets_api).to receive(:get_wallet).with(wallet_id).and_return(model_with_default_address)
@@ -112,7 +113,7 @@ describe Coinbase::Wallet do
     end
 
     context 'when the data is invalid' do
-      subject(:imported_wallet) { Coinbase::Wallet.import({ invalid: 'data' }) }
+      subject(:imported_wallet) { described_class.import({ invalid: 'data' }) }
 
       it 'raises an error for invalid data' do
         expect { imported_wallet }.to raise_error(ArgumentError)
@@ -121,14 +122,14 @@ describe Coinbase::Wallet do
   end
 
   describe '.create' do
+    subject(:created_wallet) { described_class.create }
+
     let(:wallet_id) { SecureRandom.uuid }
     let(:create_wallet_request) do
       { wallet: { network_id: network_id, use_server_signer: use_server_signer } }
     end
     let(:request) { { create_wallet_request: create_wallet_request } }
     let(:wallet_model) { build(:wallet_model, network, id: wallet_id) }
-
-    subject(:created_wallet) { described_class.create }
 
     before do
       allow(wallets_api).to receive(:create_wallet).with(request).and_return(wallet_model)
@@ -143,6 +144,7 @@ describe Coinbase::Wallet do
 
     context 'when not using a server signer' do
       let(:use_server_signer) { false }
+
       before do
         allow(addresses_api)
           .to receive(:create_address)
@@ -162,7 +164,7 @@ describe Coinbase::Wallet do
       end
 
       it 'creates a new wallet' do
-        expect(created_wallet).to be_a(Coinbase::Wallet)
+        expect(created_wallet).to be_a(described_class)
       end
 
       it 'creates a default address' do
@@ -172,6 +174,10 @@ describe Coinbase::Wallet do
     end
 
     context 'when setting the network ID explicitly' do
+      subject(:created_wallet) do
+        described_class.create(network_id: network)
+      end
+
       let(:network) { :base_mainnet }
       let(:use_server_signer) { false }
 
@@ -194,12 +200,8 @@ describe Coinbase::Wallet do
           .and_return(model_with_default_address)
       end
 
-      subject(:created_wallet) do
-        described_class.create(network_id: network)
-      end
-
       it 'creates a new wallet' do
-        expect(created_wallet).to be_a(Coinbase::Wallet)
+        expect(created_wallet).to be_a(described_class)
       end
 
       it 'sets the specified network ID' do
@@ -213,7 +215,7 @@ describe Coinbase::Wallet do
         end
 
         it 'creates a new wallet' do
-          expect(created_wallet).to be_a(Coinbase::Wallet)
+          expect(created_wallet).to be_a(described_class)
         end
 
         it 'sets the specified network ID' do
@@ -223,7 +225,12 @@ describe Coinbase::Wallet do
     end
 
     context 'when using a server signer' do
+      subject(:created_wallet) do
+        described_class.create(interval_seconds: 0.2, timeout_seconds: 0.00001)
+      end
+
       let(:use_server_signer) { true }
+
       before do
         allow(addresses_api)
           .to receive(:create_address)
@@ -236,12 +243,8 @@ describe Coinbase::Wallet do
           .and_return(model_with_seed_active)
       end
 
-      subject(:created_wallet) do
-        described_class.create(interval_seconds: 0.2, timeout_seconds: 0.00001)
-      end
-
       it 'creates a new wallet' do
-        expect(created_wallet).to be_a(Coinbase::Wallet)
+        expect(created_wallet).to be_a(described_class)
       end
 
       it 'creates a default address' do
@@ -255,16 +258,17 @@ describe Coinbase::Wallet do
     end
 
     context 'when using a server signer is not active' do
+      subject(:created_wallet) do
+        described_class.create(interval_seconds: 0.2, timeout_seconds: 0.00001)
+      end
+
       let(:use_server_signer) { true }
+
       before do
         allow(wallets_api)
           .to receive(:get_wallet)
           .with(wallet_id)
           .and_return(model_with_seed_pending)
-      end
-
-      subject(:created_wallet) do
-        described_class.create(interval_seconds: 0.2, timeout_seconds: 0.00001)
       end
 
       it 'raises a Timeout::Error' do
@@ -279,7 +283,7 @@ describe Coinbase::Wallet do
     subject(:wallet) { described_class.new(model) }
 
     it 'initializes a new Wallet' do
-      expect(wallet).to be_a(Coinbase::Wallet)
+      expect(wallet).to be_a(described_class)
     end
 
     it 'sets the model instance variable' do
@@ -300,7 +304,7 @@ describe Coinbase::Wallet do
       end
 
       it 'initializes a new Wallet' do
-        expect(wallet).to be_a(Coinbase::Wallet)
+        expect(wallet).to be_a(described_class)
       end
 
       it 'initializes a new master seed' do
@@ -326,7 +330,7 @@ describe Coinbase::Wallet do
       end
 
       it 'initializes a new Wallet' do
-        expect(wallet).to be_a(Coinbase::Wallet)
+        expect(wallet).to be_a(described_class)
       end
 
       it 'initializes a master seed with the specified value' do
@@ -355,7 +359,7 @@ describe Coinbase::Wallet do
         let(:seed) { '' }
 
         it 'initializes a new Wallet' do
-          expect(wallet).to be_a(Coinbase::Wallet)
+          expect(wallet).to be_a(described_class)
         end
 
         it 'does not generate a new master seed' do
@@ -495,11 +499,11 @@ describe Coinbase::Wallet do
   end
 
   describe '#create_address' do
+    subject(:created_address) { wallet.create_address }
+
     let(:expected_public_key) { created_address_model.public_key }
     let(:wallet) { described_class.new(model, seed: seed) }
     let(:existing_addresses) { [] }
-
-    subject(:created_address) { wallet.create_address }
 
     before do
       allow(addresses_api)
@@ -564,9 +568,9 @@ describe Coinbase::Wallet do
     end
 
     context 'when using a server signer' do
-      let(:created_address_model) { address_model1 }
-
       subject(:created_address) { wallet.create_address }
+
+      let(:created_address_model) { address_model1 }
 
       before do
         allow(addresses_api)
@@ -597,8 +601,9 @@ describe Coinbase::Wallet do
     end
 
     context 'when the wallet has a default address' do
-      let(:expected_address) { Coinbase::WalletAddress.new(address_model1, nil) }
       subject(:wallet) { described_class.new(model_with_default_address, seed: '') }
+
+      let(:expected_address) { Coinbase::WalletAddress.new(address_model1, nil) }
 
       it 'returns the default address' do
         expect(wallet.default_address.id).to eq(address_model1.address_id)
@@ -621,10 +626,10 @@ describe Coinbase::Wallet do
   end
 
   describe '#address' do
+    subject(:address) { wallet.address(address_model2.address_id) }
+
     let(:address_models) { [address_model1, address_model2] }
     let(:wallet) { described_class.new(model, seed: '') }
-
-    subject(:address) { wallet.address(address_model2.address_id) }
 
     before do
       allow(addresses_api)
@@ -640,9 +645,10 @@ describe Coinbase::Wallet do
   end
 
   describe '#addresses' do
+    subject(:wallet) { described_class.new(model, seed: '') }
+
     let(:address_models) { [address_model1, address_model2] }
     let(:total_count) { address_models.length }
-    subject(:wallet) { described_class.new(model, seed: '') }
 
     before do
       allow(addresses_api)
@@ -736,14 +742,14 @@ describe Coinbase::Wallet do
   end
 
   context 'with a default address' do
+    subject(:wallet) { described_class.new(model_with_default_address, seed: '') }
+
     before do
       allow(addresses_api)
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
         .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
     end
-
-    subject(:wallet) { described_class.new(model_with_default_address, seed: '') }
 
     %i[stake unstake claim_stake].each do |method|
       describe "##{method}" do
@@ -795,6 +801,10 @@ describe Coinbase::Wallet do
   end
 
   describe '#transfer' do
+    subject(:wallet) do
+      described_class.new(model_with_default_address, seed: '')
+    end
+
     let(:transfer) { double('Coinbase::Transfer') }
     let(:amount) { 5 }
     let(:asset_id) { :eth }
@@ -814,10 +824,6 @@ describe Coinbase::Wallet do
         .to receive(:list_addresses)
         .with(wallet_id, { limit: 20 })
         .and_return(Coinbase::Client::AddressList.new(data: [address_model1], total_count: 1))
-    end
-
-    subject(:wallet) do
-      described_class.new(model_with_default_address, seed: '')
     end
 
     context 'when the destination is a Wallet' do
@@ -867,14 +873,14 @@ describe Coinbase::Wallet do
   end
 
   describe '#trade' do
+    subject(:wallet) do
+      described_class.new(model_with_default_address, seed: '')
+    end
+
     let(:trade) { double('Coinbase::Trade') }
     let(:amount) { 5 }
     let(:from_asset_id) { :eth }
     let(:to_asset_id) { :weth }
-
-    subject(:wallet) do
-      described_class.new(model_with_default_address, seed: '')
-    end
 
     before do
       allow(addresses_api)
@@ -895,10 +901,10 @@ describe Coinbase::Wallet do
 
   describe '#export' do
     context 'when not using a server signer' do
+      subject(:exported_data) { seed_wallet.export }
+
       let(:use_server_signer) { false }
       let(:seed_wallet) { described_class.new(model, seed: seed) }
-
-      subject(:exported_data) { seed_wallet.export }
 
       it 'exports the wallet data' do
         expect(exported_data).to be_a(Coinbase::Wallet::Data)
@@ -926,12 +932,12 @@ describe Coinbase::Wallet do
   end
 
   describe '#faucet' do
+    subject(:faucet_transaction) { wallet.faucet }
+
     let(:faucet_transaction_model) do
       Coinbase::Client::FaucetTransaction.new({ transaction_hash: '0x123456789' })
     end
     let(:wallet) { described_class.new(model_with_default_address, seed: '') }
-
-    subject(:faucet_transaction) { wallet.faucet }
 
     before do
       allow(addresses_api)
@@ -1018,7 +1024,7 @@ describe Coinbase::Wallet do
       end
 
       it 'sets encrypted to true' do
-        expect(wallet_saved_data['encrypted']).to eq(true)
+        expect(wallet_saved_data['encrypted']).to be(true)
       end
 
       it 'sets the IV' do
@@ -1040,14 +1046,6 @@ describe Coinbase::Wallet do
       it 'saves the wallet data to the new file' do
         expect(saved_seed_data[wallet.id])
           .to eq({ 'seed' => seed, 'encrypted' => false, 'iv' => '', 'auth_tag' => '' })
-      end
-    end
-
-    context 'when the file contains other wallet data' do
-      let(:initial_seed_data) do
-        {
-          SecureRandom.uuid => {}
-        }
       end
     end
 

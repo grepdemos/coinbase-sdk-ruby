@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 describe Coinbase::ServerSigner do
+  subject(:server_signer) { described_class.new(model) }
+
   let(:server_signer_id) { SecureRandom.uuid }
   let(:wallets) { [SecureRandom.uuid, SecureRandom.uuid, SecureRandom.uuid] }
   let(:model) { Coinbase::Client::ServerSigner.new('server_signer_id' => server_signer_id, 'wallets' => wallets) }
@@ -18,8 +20,6 @@ describe Coinbase::ServerSigner do
   end
   let(:server_signers_api) { double('Coinbase::Client::ServerSignersApi') }
 
-  subject(:server_signer) { described_class.new(model) }
-
   before do
     allow(Coinbase::Client::ServerSignersApi).to receive(:new).and_return(server_signers_api)
   end
@@ -31,7 +31,7 @@ describe Coinbase::ServerSigner do
 
     context 'when a default Server-Signer exists' do
       it 'returns the default Server-Signer' do
-        default_server_signer = Coinbase::ServerSigner.default
+        default_server_signer = described_class.default
         expect(default_server_signer.id).to eq(server_signer_id)
         expect(default_server_signer.wallets).to eq(wallets)
       end
@@ -43,14 +43,14 @@ describe Coinbase::ServerSigner do
       end
 
       it 'throws an error' do
-        expect { Coinbase::ServerSigner.default }.to raise_error('No Server-Signer is associated with the project')
+        expect { described_class.default }.to raise_error('No Server-Signer is associated with the project')
       end
     end
   end
 
   describe '#initialize' do
     it 'initializes a new Server-Signer' do
-      expect(server_signer).to be_a(Coinbase::ServerSigner)
+      expect(server_signer).to be_a(described_class)
     end
   end
 

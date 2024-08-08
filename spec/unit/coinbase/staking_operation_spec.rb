@@ -18,33 +18,29 @@ describe Coinbase::StakingOperation do
 
   let(:stake_api) { double('Coinbase::Client::StakeApi') }
 
-  before(:each) do
-    allow(Coinbase::Client::StakeApi).to receive(:new).and_return(stake_api)
-  end
-
   before do
+    allow(Coinbase::Client::StakeApi).to receive(:new).and_return(stake_api)
     allow(staking_operation_model).to receive(:transactions).and_return([transaction_model])
     allow(Coinbase::Transaction).to receive(:new).and_return(transaction)
-    allow(transaction).to receive(:signed?).and_return(false)
     allow(transaction).to receive(:sign)
     allow(Coinbase::Asset).to receive(:fetch).and_return(eth_asset)
     allow(Coinbase::Client::StakeApi).to receive(:new).and_return(stake_api)
-    allow(stake_api).to receive(:build_staking_operation).and_return(staking_operation_model)
-    allow(stake_api).to receive(:create_staking_operation).and_return(staking_operation_model)
+    allow(stake_api).to receive_messages(build_staking_operation: staking_operation_model,
+                                         create_staking_operation: staking_operation_model)
     allow(stake_api).to receive(:broadcast_staking_operation)
     raw_tx = double 'EthereumTransaction'
-    allow(transaction).to receive(:raw).and_return(raw_tx)
+    allow(transaction).to receive_messages(signed?: false, raw: raw_tx)
     allow(raw_tx).to receive(:hex).and_return(hex_encoded_transaction)
   end
 
   describe '.build' do
+    subject { described_class.build(amount, network_id, asset_id, address_id, action, mode, options) }
+
     let(:amount) { 1 }
     let(:asset_id) { :eth }
     let(:action) { :stake }
     let(:mode) { :partial }
     let(:options) { {} }
-
-    subject { described_class.build(amount, network_id, asset_id, address_id, action, mode, options) }
 
     it 'calls Asset.fetch' do
       subject
@@ -71,13 +67,13 @@ describe Coinbase::StakingOperation do
   end
 
   describe '.create' do
+    subject { described_class.create(amount, network_id, asset_id, address_id, wallet_id, action, mode, options) }
+
     let(:amount) { 1 }
     let(:asset_id) { :eth }
     let(:action) { :stake }
     let(:mode) { :partial }
     let(:options) { {} }
-
-    subject { described_class.create(amount, network_id, asset_id, address_id, wallet_id, action, mode, options) }
 
     it 'calls Asset.fetch' do
       subject
@@ -106,12 +102,12 @@ describe Coinbase::StakingOperation do
   end
 
   describe '.fetch' do
-    before do
-      allow(stake_api).to receive(:get_external_staking_operation).and_return(staking_operation_model)
-      allow(stake_api).to receive(:get_staking_operation).and_return(staking_operation_model)
-    end
-
     subject(:fetch) { described_class.fetch(network_id, address_id, 'some_id') }
+
+    before do
+      allow(stake_api).to receive_messages(get_external_staking_operation: staking_operation_model,
+                                           get_staking_operation: staking_operation_model)
+    end
 
     it 'calls StakeApi.get_external_staking_operation' do
       subject
@@ -137,12 +133,12 @@ describe Coinbase::StakingOperation do
   end
 
   describe '.reload' do
-    before do
-      allow(stake_api).to receive(:get_external_staking_operation).and_return(staking_operation_model)
-      allow(stake_api).to receive(:get_staking_operation).and_return(staking_operation_model)
-    end
-
     subject(:reload) { staking_operation.reload }
+
+    before do
+      allow(stake_api).to receive_messages(get_external_staking_operation: staking_operation_model,
+                                           get_staking_operation: staking_operation_model)
+    end
 
     it 'calls StakeApi.get_staking_operation' do
       subject
@@ -253,11 +249,11 @@ describe Coinbase::StakingOperation do
     context 'with multiple transactions' do
       let(:other_hex_encoded_transaction) { '0xdeadbeef' }
       let(:other_transaction) { instance_double(Coinbase::Transaction) }
+
       before do
         allow(staking_operation).to receive(:transactions).and_return([transaction, other_transaction])
-        allow(other_transaction).to receive(:signed?).and_return(transaction_signed)
         raw_tx = double 'EthereumTransaction'
-        allow(other_transaction).to receive(:raw).and_return(raw_tx)
+        allow(other_transaction).to receive_messages(signed?: transaction_signed, raw: raw_tx)
         allow(raw_tx).to receive(:hex).and_return(other_hex_encoded_transaction)
       end
 

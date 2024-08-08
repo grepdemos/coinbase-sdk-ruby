@@ -70,8 +70,9 @@ describe Coinbase::StakingReward do
   end
 
   describe '#amount' do
-    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
     subject(:amount) { staking_reward.amount }
+
+    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
 
     it 'returns the amount in USD' do
       expect(staking_reward.amount).to eq(BigDecimal('1'))
@@ -98,8 +99,9 @@ describe Coinbase::StakingReward do
   end
 
   describe '#date' do
-    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
     subject(:date) { staking_reward.date }
+
+    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
 
     it 'returns the date' do
       expect(staking_reward.date).to eq(staking_reward_model.date)
@@ -107,8 +109,9 @@ describe Coinbase::StakingReward do
   end
 
   describe '#address_id' do
-    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
     subject(:address_id) { staking_reward.address_id }
+
+    let(:staking_reward) { described_class.new(staking_reward_model, asset, format) }
 
     it 'returns the address_id' do
       expect(staking_reward.address_id).to eq(staking_reward_model.address_id)

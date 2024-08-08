@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 describe Coinbase::Transfer do
+  subject(:transfer) { described_class.new(model) }
+
   let(:from_key) { build(:key) }
   let(:to_key) { Eth::Key.new }
   let(:network_id) { :base_sepolia }
@@ -17,13 +19,22 @@ describe Coinbase::Transfer do
   let(:wallet_id) { model.wallet_id }
   let(:transfers_api) { double('Coinbase::Client::TransfersApi') }
 
-  subject(:transfer) { described_class.new(model) }
-
   before do
     allow(Coinbase::Client::TransfersApi).to receive(:new).and_return(transfers_api)
   end
 
   describe '.create' do
+    subject(:transfer) do
+      described_class.create(
+        address_id: from_address_id,
+        asset_id: asset_id,
+        amount: whole_amount,
+        destination: destination,
+        network_id: network_id,
+        wallet_id: wallet_id
+      )
+    end
+
     let(:asset_id) { :eth }
     let(:normalized_asset_id) { 'eth' }
     let(:asset) { build(:asset, :eth) }
@@ -35,17 +46,6 @@ describe Coinbase::Transfer do
         destination: to_address_id,
         network_id: Coinbase.normalize_network(network_id)
       }
-    end
-
-    subject(:transfer) do
-      described_class.create(
-        address_id: from_address_id,
-        asset_id: asset_id,
-        amount: whole_amount,
-        destination: destination,
-        network_id: network_id,
-        wallet_id: wallet_id
-      )
     end
 
     before do
@@ -61,7 +61,7 @@ describe Coinbase::Transfer do
     end
 
     it 'creates a new Transfer' do
-      expect(transfer).to be_a(Coinbase::Transfer)
+      expect(transfer).to be_a(described_class)
     end
 
     it 'sets the transfer properties' do
@@ -84,7 +84,7 @@ describe Coinbase::Transfer do
       let(:atomic_amount) { BigDecimal(100) }
 
       it 'creates a new Transfer' do
-        expect(transfer).to be_a(Coinbase::Transfer)
+        expect(transfer).to be_a(described_class)
       end
 
       it 'constructs the transfer with the primary denomination from asset' do
@@ -94,17 +94,17 @@ describe Coinbase::Transfer do
   end
 
   describe '.list' do
+    subject(:enumerator) do
+      described_class.list(wallet_id: wallet_id, address_id: from_address_id)
+    end
+
     let(:api) { transfers_api }
     let(:fetch_params) { ->(page) { [wallet_id, from_address_id, { limit: 100, page: page }] } }
     let(:resource_list_klass) { Coinbase::Client::TransferList }
-    let(:item_klass) { Coinbase::Transfer }
+    let(:item_klass) { described_class }
     let(:item_initialize_args) { nil }
     let(:create_model) do
       ->(id) { build(:transfer_model, network_id, transfer_id: id) }
-    end
-
-    subject(:enumerator) do
-      Coinbase::Transfer.list(wallet_id: wallet_id, address_id: from_address_id)
     end
 
     it_behaves_like 'it is a paginated enumerator', :transfers
@@ -112,7 +112,7 @@ describe Coinbase::Transfer do
 
   describe '#initialize' do
     it 'initializes a new Transfer' do
-      expect(transfer).to be_a(Coinbase::Transfer)
+      expect(transfer).to be_a(described_class)
     end
 
     context 'when initialized with a model of a different type' do
@@ -203,9 +203,9 @@ describe Coinbase::Transfer do
   end
 
   describe '#broadcast!' do
-    let(:broadcasted_transfer_model) { build(:transfer_model, network_id, :broadcasted, key: from_key) }
-
     subject(:broadcasted_transfer) { transfer.broadcast! }
+
+    let(:broadcasted_transfer_model) { build(:transfer_model, network_id, :broadcasted, key: from_key) }
 
     context 'when the transaction is signed' do
       let(:broadcast_transfer_request) do
@@ -224,7 +224,7 @@ describe Coinbase::Transfer do
       end
 
       it 'returns the updated Transfer' do
-        expect(broadcasted_transfer).to be_a(Coinbase::Transfer)
+        expect(broadcasted_transfer).to be_a(described_class)
       end
 
       it 'broadcasts the transaction' do

@@ -2,7 +2,7 @@
 
 describe Coinbase::Balance do
   let(:amount) { BigDecimal('123.0') }
-  let(:balance_model) { instance_double('Coinbase::Client::Balance', asset: asset, amount: amount) }
+  let(:balance_model) { instance_double(Coinbase::Client::Balance, asset: asset, amount: amount) }
   let(:eth_asset) { build(:asset_model) }
 
   describe '.from_model' do
@@ -117,10 +117,10 @@ describe Coinbase::Balance do
   end
 
   describe '#initialize' do
+    subject(:balance) { described_class.new(amount: amount, asset: asset) }
+
     let(:amount) { BigDecimal('123.0') }
     let(:asset) { Coinbase::Asset.from_model(eth_asset) }
-
-    subject(:balance) { described_class.new(amount: amount, asset: asset) }
 
     it 'sets the amount' do
       expect(balance.amount).to eq(amount)
@@ -136,10 +136,10 @@ describe Coinbase::Balance do
   end
 
   describe '#inspect' do
+    subject(:balance) { described_class.new(amount: amount, asset: asset) }
+
     let(:amount) { BigDecimal('123.0') }
     let(:asset) { Coinbase::Asset.from_model(eth_asset) }
-
-    subject(:balance) { described_class.new(amount: amount, asset: asset) }
 
     it 'includes balance details' do
       expect(balance.inspect).to include('123', 'eth')

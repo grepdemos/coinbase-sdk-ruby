@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
 describe Coinbase::Transaction do
+  subject(:transaction) { build(:transaction, model: transaction_model) }
+
   let(:from_key) { build(:key) }
   let(:to_address_id) { '0xe317065De795eFBaC71cf00114c7252BFcd23c29'.downcase }
   let(:transaction_model) { build(:transaction_model, from_address_id: from_key.address.to_s) }
-  subject(:transaction) { build(:transaction, model: transaction_model) }
 
   describe '#initialize' do
     it 'initializes a new Transaction' do
-      expect(transaction).to be_a(Coinbase::Transaction)
+      expect(transaction).to be_a(described_class)
     end
 
     context 'when initialized with a model of a different type' do
@@ -72,6 +73,7 @@ describe Coinbase::Transaction do
         expect(transaction.transaction_hash).to be_nil
       end
     end
+
     context 'when the transaction has been broadcast on chain' do
       subject(:transaction_model) { build(:transaction_model, :broadcasted) }
 
@@ -135,6 +137,7 @@ describe Coinbase::Transaction do
 
   describe '#raw' do
     let(:atomic_amount) { 10_000_000_000_000 }
+
     context 'when the model is unsigned' do
       it 'returns the raw transaction' do
         expect(transaction.raw).to be_a(Eth::Tx::Eip1559)

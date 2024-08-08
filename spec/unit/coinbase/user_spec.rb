@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 describe Coinbase::User do
+  subject(:user) { described_class.new(model) }
+
   let(:user_id) { SecureRandom.uuid }
   let(:model) { Coinbase::Client::User.new(id: user_id) }
   let(:wallets_api) { instance_double(Coinbase::Client::WalletsApi) }
   let(:addresses_api) { instance_double(Coinbase::Client::AddressesApi) }
   let(:transfers_api) { instance_double(Coinbase::Client::TransfersApi) }
-  subject(:user) { described_class.new(model) }
 
   describe '#id' do
     it 'returns the user ID' do
@@ -16,7 +17,7 @@ describe Coinbase::User do
 
   describe '#create_wallet' do
     let(:network_id) { 'base-sepolia' }
-    let(:wallet) { instance_double('Coinbase::Wallet', network_id: Coinbase.to_sym(network_id)) }
+    let(:wallet) { instance_double(Coinbase::Wallet, network_id: Coinbase.to_sym(network_id)) }
 
     context 'when called with no arguments' do
       before do
@@ -40,12 +41,12 @@ describe Coinbase::User do
   end
 
   describe '#import_wallet' do
+    subject(:imported_wallet) { user.import_wallet(wallet_export_data) }
+
     let(:seed) { MoneyTree::Master.new.seed_hex }
     let(:wallet_id) { SecureRandom.uuid }
     let(:wallet_export_data) { Coinbase::Wallet::Data.new(wallet_id: wallet_id, seed: seed) }
     let(:wallet) { build(:wallet, id: wallet_id, seed: seed) }
-
-    subject(:imported_wallet) { user.import_wallet(wallet_export_data) }
 
     it 'imports an exported wallet' do
       allow(Coinbase::Wallet).to receive(:import).with(wallet_export_data).and_return(wallet)

@@ -113,7 +113,7 @@ shared_examples 'an address that supports requesting faucet funds' do |_operatio
   describe '#faucet' do
     let(:tx_hash) { '0xdeadbeef' }
     let(:faucet_tx) do
-      instance_double('Coinbase::Client::FaucetTransaction', transaction_hash: tx_hash)
+      instance_double(Coinbase::Client::FaucetTransaction, transaction_hash: tx_hash)
     end
 
     context 'when the request is successful' do

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 describe Coinbase::Address do
+  subject(:address) { described_class.new(network_id, address_id) }
+
   let(:network_id) { :ethereum_mainnet }
   let(:normalized_network_id) { 'ethereum-mainnet' }
   let(:address_id) { '0x1234' }
-
-  subject(:address) { described_class.new(network_id, address_id) }
 
   describe '#id' do
     subject { address.id }

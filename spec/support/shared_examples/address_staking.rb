@@ -34,6 +34,7 @@ shared_examples 'an address that supports staking' do
   before do
     allow(Coinbase::Client::StakeApi).to receive(:new).and_return(stake_api)
   end
+
   include_context 'with mocked staking_balances'
 
   shared_examples 'it builds a staking operation' do |operation|
