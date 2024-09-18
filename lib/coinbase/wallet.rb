@@ -459,6 +459,28 @@ module Coinbase
       "Successfully loaded seed for wallet #{id} from #{file_path}."
     end
 
+    # Creates a new webhook on the current wallet for tracking wallet activity events.
+    #
+    # @param notification_uri [String] The URI to which the webhook notifications will be sent.
+    # @param addresses [Array<String>] The list of wallet addresses to include in the event filter,
+    #   defaulting to the addresses of the current wallet.
+    # @param signature_header [String] (Optional) A header used to sign the webhook request,
+    #   defaulting to an empty string.
+    #
+    # @return [Coinbase::Webhook] The newly created webhook instance.
+    def create_webhook(notification_uri:, addresses: self.addresses.map(&:id), signature_header: '')
+      Coinbase::Webhook.create(
+        network_id: Coinbase.normalize_network(network),
+        notification_uri: notification_uri,
+        event_type: Coinbase::Webhook::WALLET_ACTIVITY_EVENT,
+        event_type_filter: {
+          addresses: addresses,
+          wallet_id: id
+        },
+        signature_header: signature_header
+      )
+    end
+
     # Returns a String representation of the Wallet.
     # @return [String] a String representation of the Wallet
     def to_s

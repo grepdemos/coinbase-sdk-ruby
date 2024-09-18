@@ -11,6 +11,9 @@ module Coinbase
     # Event type for ERC721 transfer
     ERC721_TRANSFER_EVENT = 'erc721_transfer'
 
+    # Event type for Wallet activity
+    WALLET_ACTIVITY_EVENT = 'wallet_activity'
+
     class << self
       # Creates a new webhook for a specified network.
       #
@@ -24,6 +27,7 @@ module Coinbase
       #   can include keys like `contract_address`, `from_address`, or `to_address`.
       # @param signature_header [String] The custom header to be used for x-webhook-signature header on callbacks,
       #   so developers can verify the requests are coming from Coinbase.
+      # @param event_type_filter [Hash] Filters applied to wallet activity event type.
       # @return [Coinbase::Webhook] A new instance of Webhook.
       #
       # @example Create a new webhook
@@ -32,9 +36,20 @@ module Coinbase
       #     notification_uri: 'https://example.com/callback',
       #     event_type: 'transaction',
       #     event_filters: [{ 'contract_address' => '0x...', 'from_address' => '0x...', 'to_address' => '0x...' }],
-      #     signature_header: 'example_header'
+      #     signature_header: 'example_header',
+      #     event_type_filter: {
+      #       "addresses" => ["0xa3B299855BE3eA231337aC7c40A615e090A3de25"],
+      #       "wallet_id" => "d91d652b-d020-48d4-bf19-5c5eb5e280c7"
+      #     }
       #   )
-      def create(network_id:, notification_uri:, event_type:, event_filters:, signature_header: '')
+      def create(
+        network_id:,
+        notification_uri:,
+        event_type:,
+        event_filters: [],
+        signature_header: '',
+        event_type_filter: nil
+      )
         model = Coinbase.call_api do
           webhooks_api.create_webhook(
             create_webhook_request: {
@@ -42,7 +57,8 @@ module Coinbase
               notification_uri: notification_uri,
               event_type: event_type,
               event_filters: event_filters,
-              signature_header: signature_header
+              signature_header: signature_header,
+              event_type_filter: event_type_filter
             }
           )
         end
@@ -124,6 +140,13 @@ module Coinbase
       @model.signature_header
     end
 
+    # Returns the event type filters applied to the wallet activity webhook.
+    #
+    # @return [Array<Coinbase::Client::WebhookEventTypeFilter>] A hash of event type filter used by the webhook.
+    def event_type_filter
+      @model.event_type_filter
+    end
+
     # Updates the webhook with a new notification URI.
     #
     # @param notification_uri [String] The new URI for webhook notifications.
@@ -172,8 +195,9 @@ module Coinbase
         network_id: @model.network_id,
         event_type: @model.event_type,
         notification_uri: @model.notification_uri,
-        event_filters: @model.event_filters.map(&:to_hash).to_json,
-        signature_header: @model.signature_header
+        event_filters: (@model.event_filters || []).map(&:to_hash).to_json,
+        signature_header: @model.signature_header,
+        event_type_filter: @model.event_type_filter
       )
     end
 
